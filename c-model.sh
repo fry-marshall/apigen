@@ -33,7 +33,7 @@ touch $1"-service.js"
 
 serviceClass=$capitalize"Service"
 
-echo "const Service = require('../service')
+echo "const Service = require('./service')
 
 class $serviceClass extends Service
 {
@@ -53,9 +53,9 @@ touch $1"-controller.js"
 controllerClass=$capitalize"Controller"
 
 echo "
-const config = require('../../config')
+const config = require('../config')
 const model = require(config.models+'/$1')
-const Controller = require(config.controllers)
+const Controller = require(config.controllers+'/controller')
 const ServiceClass = require(config.services+'/$1-service')
 const $1Service = new ServiceClass(model);
 const path = require('path')
@@ -80,7 +80,7 @@ touch $1".js"
 touch middlewares.js
 echo "const config = require('../../config')
 
-const $controllerClass = require(config['controllers-classes']+'/$1-controller')
+const $controllerClass = require(config['controllers']+'/$1-controller')
 const expressRouter = config.express.Router()
 const { query, validationResult } = require('express-validator');
 const errors = require('../middlewares').errors

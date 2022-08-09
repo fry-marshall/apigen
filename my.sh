@@ -239,6 +239,15 @@ app.listen(process.env.PORT, () => {
 })" > app.js
 
 
+touch .env.example
+echo "TOKEN_SECRET=
+PORT=
+DATABASE_NAME=
+DATABASE_PASSWORD=
+DATABASE_USERNAME=
+ROOT_API=" > .env.example
+
+
 touch config.js
 echo "module.exports = {
     'root': __dirname,
