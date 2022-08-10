@@ -80,7 +80,7 @@ touch $1".js"
 touch middlewares.js
 echo "const config = require('../../config')
 
-const AccountController = require(config['controllers']+'/account-controller')
+const $controllerClass = require(config['controllers']+'/$1-controller')
 const expressRouter = config.express.Router()
 const bodyParser = require('body-parser');
 
@@ -91,7 +91,7 @@ var jsonParser = bodyParser.json()
 expressRouter.post('/create', jsonParser, $controllerClass.insert)
 expressRouter.get('/', $controllerClass.getAll)
 expressRouter.put('/update',jsonParser,$controllerClass.update)
-expressRouter.delete('/delete', $controllerClass.delete)
+expressRouter.delete('/delete',jsonParser, $controllerClass.delete)
 
 
 module.exports = expressRouter" > $1".js"
