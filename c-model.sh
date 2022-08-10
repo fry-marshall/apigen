@@ -80,16 +80,18 @@ touch $1".js"
 touch middlewares.js
 echo "const config = require('../../config')
 
-const $controllerClass = require(config['controllers']+'/$1-controller')
+const AccountController = require(config['controllers']+'/account-controller')
 const expressRouter = config.express.Router()
-const { query, validationResult } = require('express-validator');
-const errors = require('../middlewares').errors
-const customError = require('../middlewares')
+const bodyParser = require('body-parser');
 
-expressRouter.post('/create', $controllerClass.insert)
+
+var jsonParser = bodyParser.json()
+
+
+expressRouter.post('/create', jsonParser, $controllerClass.insert)
 expressRouter.get('/', $controllerClass.getAll)
-expressRouter.put('/update/:id',$controllerClass.update)
-expressRouter.delete('/delete/:id', $controllerClass.delete)
+expressRouter.put('/update',jsonParser,$controllerClass.update)
+expressRouter.delete('/delete', $controllerClass.delete)
 
 
 module.exports = expressRouter" > $1".js"
@@ -98,5 +100,5 @@ module.exports = expressRouter" > $1".js"
 #index.js
 #add the route to the index
 cd ../..
-node test.js $1
-
+node router.js $1
+node migration.js $1
