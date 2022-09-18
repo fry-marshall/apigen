@@ -1,7 +1,13 @@
 #!/bin/bash
 
+echo "project initialization $1"
+mkdir -p -- "$1"
+cd $1
+
 mkdir -p -- "assets"
+
 #controllers
+echo "controller initialization"
 mkdir -p -- "controllers"
 cd controllers
 touch controller.js
@@ -51,6 +57,7 @@ module.exports = Controller;
 
 cd ..
 #routes
+echo "routes initialization"
 mkdir -p -- "routes"
 cd routes
 touch index.js
@@ -63,47 +70,15 @@ const routes = (app) => {
 
 module.exports = routes" > index.js
 
+#middleware
+echo "middlewares initialization"
 touch middlewares.js
-echo "
-exports.verifyToken = (jwt, token_black_list) => {
-    return async (req, res, next) => {
-        const authHeader = req.headers['authorization']
-        const token = authHeader && authHeader.split(' ')[1]
 
-    
-        if (token == null) return res.sendStatus(401)
-      
-        jwt.verify(token, process.env.TOKEN_SECRET, async (err, user) => {
-
-      
-          if (err) return res.sendStatus(23)
-
-          
-          /* let token_ = await token_black_list.findOne({
-              where: {
-                  token: token
-              }
-          })
-
-
-
-          if(typeof token_ !== 'undefined')
-          {
-            return res.status(400).json({ errors: [{code: 4, param: 'invalid token'}] });
-          } */
-
-      
-          res.locals.user = user
-          res.locals.token = token
-        })
-        next()
-    }
-}
-" > middlewares.js
 
 
 cd ..
 #utils
+echo "utils initialization"
 mkdir -p -- "utils"
 cd utils
 mkdir -p -- "database"
@@ -199,7 +174,7 @@ echo "module.exports = {
 }" > config.js
 
 
-
+echo "services initialization"
 mkdir -p -- "services"
 cd services
 touch service.js
@@ -324,6 +299,7 @@ module.exports = Service" > service.js
 
 
 cd ..
+echo "package.json initialization"
 touch package.json
 
 echo "{
