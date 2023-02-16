@@ -62,7 +62,6 @@ mkdir -p -- "routes"
 cd routes
 touch index.js
 echo "const fileUpload = require('express-fileupload')
- 
 
 const routes = (app) => {
     app.use(fileUpload())
@@ -151,12 +150,15 @@ app.listen(process.env.PORT, () => {
 
 
 touch .env.example
-echo "TOKEN_SECRET=
+echo "ACCESS_TOKEN_SECRET=
+REFRESH_TOKEN_SECRET=
 PORT=
 DATABASE_NAME=
 DATABASE_PASSWORD=
 DATABASE_USERNAME=
-ROOT_API=" > .env.example
+ROOT_API=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=" > .env.example
 
 
 touch config.js
@@ -297,8 +299,102 @@ class Service {
 
 module.exports = Service" > service.js
 
-
 cd ..
+echo "router and migration auto generate"
+touch router.js
+touch migration.js
+echo "var fs = require('fs');
+
+const myArgs = process.argv.slice(2);
+const route = \"\\\"/\"+myArgs+\"\\\"\"
+const routerName = myArgs+\"Router\"
+
+const requireName = 'require(\"./'+myArgs+'/'+myArgs+'\")'
+const importName = 'const ' + routerName + ' = ' + requireName
+
+var data = fs.readFileSync('routes/index.js').toString().split(\"\n\");
+let lineRouter
+let lineImport
+
+let alreadyImport = false
+let alreadyRouterAdded = false
+
+
+for(let i = 0; i < data.length; i++){
+    if(data[i].includes(importName)){
+        alreadyImport = true
+    }
+
+    if(data[i].includes('\tapp.use('+route+', '+routerName+')')){
+        alreadyRouterAdded = true
+    }
+}
+
+
+if(!alreadyImport || !alreadyRouterAdded){
+    for(let i = 0; i < data.length; i++){
+        if(data[i].includes('}')){
+            lineRouter = i
+        }
+        
+        if(!alreadyImport){
+            if(data[i].includes('fileUpload = ')){
+                lineImport = i
+            }
+        }
+        
+    }
+    
+    
+    data.splice(lineRouter, 0,'\tapp.use('+route+', '+routerName+')');
+    data.splice(lineImport, 0, ''+importName+'');
+    var text = data.join(\"\n\");
+    
+    fs.writeFile('routes/index.js', text, function (err) {
+      if (err) return console.log(err);
+    });
+}" > router.js
+
+
+echo "var fs = require('fs');
+const myArgs = process.argv.slice(2);
+const requireName = 'require(\"../models/'+myArgs+'\")'
+const importName = 'const '+myArgs+' = '+ requireName
+const sync = 'await '+myArgs+'.sync()'
+var data = fs.readFileSync('utils/database/migrations.js').toString().split(\"\n\");
+let line
+let alreadyImport = false
+
+
+for(let i = 0; i < data.length; i++){
+    if(data[i].includes(importName)){
+        alreadyImport = true
+    }
+}
+
+
+if(!alreadyImport){
+    for(let i = 0; i < data.length; i++){
+        if(data[i].includes('}')){
+            line = i
+        }
+       
+    }
+    
+    
+    data.splice(line, 0, '\t'+sync+'');
+    data.splice(line, 0, '\t'+importName+'');
+
+    var text = data.join(\"\n\");
+    
+    fs.writeFile('utils/database/migrations.js', text, function (err) {
+      if (err) return console.log(err);
+    });
+}
+" > migration.js
+
+
+
 echo "package.json initialization"
 touch package.json
 
@@ -317,6 +413,7 @@ echo "{
   \"dependencies\": {
     \"body-parser\": \"^1.20.0\",
     \"dotenv\": \"^16.0.0\",
+    \"express\": \"^4.18.2\",
     \"express-fileupload\": \"^1.3.1\",
     \"jsonwebtoken\": \"^8.5.1\",
     \"mysql2\": \"^2.3.3\",
@@ -331,3 +428,5 @@ echo "{
 " > package.json
 
 npm install
+
+
