@@ -73,6 +73,64 @@ module.exports = routes" > index.js
 echo "middlewares initialization"
 touch middlewares.js
 
+echo "const utils = require('../utils/functions')
+
+exports.verifyToken = (jwt /* token_black_list */) => {
+  return async (req, res, next) => {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+
+
+    if (token == null) return res.status(401).send(utils.inputErrors('').token_invalid)
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, user) => {
+
+
+      /* let token_ = await token_black_list.findOne({
+          where: {
+              token: token
+          }
+      })*/
+
+      if (err /*|| typeof token_ !== 'undefined'*/) {
+        return res.status(401).send(utils.inputErrors('').token_expired)
+      } else {
+        res.locals.id = user.id
+        res.locals.token = token
+        next()
+      }
+
+
+
+    })
+  }
+}
+
+
+exports.verifyRights = (rights, account) => {
+  return async (req, res, next) => {
+    let account_ = await account.findByPk(res.locals.id)
+
+    if (!account_) {
+      return res.status(404).send(utils.inputErrors('').account_not_found)
+    }
+
+    if (account_.account_type !== rights) {
+      return res.status(403).send(utils.inputErrors('').access_denied)
+    }
+
+    res.locals.account = account_
+    next()
+  }
+}
+
+exports.socketIo = (io) => {
+  return (req, res, next) => {
+    res.locals.io = io
+    next()
+  }
+}" > middlewares.js
+
 
 
 cd ..
@@ -129,7 +187,90 @@ exports.codeError = (errorKey, path) => {
     }
 
     return error
-}" > functions.js
+}
+
+exports.inputErrors = (path) => {
+    return {
+        required: { field: path, type: 400, subtype: 1, msg: 'required' },
+        invalid_format: { field: path, type: 400, subtype: 2, msg: 'invalid_format' },
+        incorrect_select: { field: path, type: 400, subtype: 3, msg: 'incorrect_select' },
+        incorrect_length: { field: path, type: 400, subtype: 4, msg: 'incorrect_length' },
+        not_unique: { field: path, type: 400, subtype: 5, msg: 'not_unique' },
+        global: { field: path, type: 400, subtype: 6, msg: 'unknown' },
+        incorrect_value: { field: path, type: 400, subtype: 7, msg: 'incorrect value' },
+
+        account_not_found: { type: 404, subtype: 1, msg: 'account not found' },
+        element_not_found: { type: 404, subtype: 2, msg: 'element not found' },
+        token_invalid: { type: 401, subtype: 1, msg: 'token invalid' },
+        token_expired: { type: 401, subtype: 2, msg: 'token expired' },
+
+        access_denied: { type: 403, subtype: 1, msg: 'acces denied' },
+    }
+}
+
+
+exports.validPassword = (password) => {
+    if(password.trim() === ''){
+        return {error: true, ...this.inputErrors("password").required}
+    }
+    else if(password.length < 8 || password.length > 32){
+        return {error: true, ...this.inputErrors("password").invalid_format}
+    }
+    else{
+        return {error: false}
+    }
+}
+
+
+exports.generateDigits = () => Math.floor(Math.random() * 999999 + 100000)
+exports.generateExpiredTime = (time = 600) => Math.floor(Date.now() / 1000) + time
+
+exports.formatDate = (weeks = null, date = new Date()) => {
+    if(weeks !== null){
+        date.setDate(date.getDate() + weeks * 7)
+    }
+    const day = date.getDate()
+    const year = date.getFullYear()
+    const month = date.getMonth()+1
+    const hours = date.getHours()
+    const minutes = date.getMinutes()
+    const secondes = date.getSeconds()
+
+    const format = year+'-'+month+'-'+day+' '+hours+':'+minutes+':'+secondes
+    return format
+}
+
+exports.formatOnlyDate = (weeks = null, date = new Date()) => {
+    if(weeks !== null){
+        date.setDate(date.getDate() + weeks * 7)
+    }
+    const day = date.getDate()
+    const year = date.getFullYear()
+    const month = date.getMonth()+1
+   
+
+    const format = year+'-'+month+'-'+day
+    return format
+}
+
+
+exports.getMonday = () => {
+    let curr = new Date();
+    let first = curr.getDate() - curr.getDay() + 1;
+
+    return this.formatOnlyDate(null, new Date(curr.setDate(first)));
+}
+
+
+exports.getSunday = () => {
+    let curr = new Date();
+    let first = curr.getDate() - curr.getDay() + 1;
+    let last = first + 6;
+
+    return this.formatOnlyDate(null, new Date(curr.setDate(last)));
+}
+
+" > functions.js
 
 cd ..
 

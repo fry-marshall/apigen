@@ -6,7 +6,7 @@ touch $1".js"
 capitalize="$(tr '[:lower:]' '[:upper:]' <<<${1:0:1})${1:1}"
 
 if [ $1 == "account" ] && [ $2 == "--default" ]; then
-    echo "const db = require('../database/db')
+echo "const db = require('../database/db')
 const sequelize = db.sequelize
 
 class $capitalize extends db.Model {}
@@ -75,6 +75,30 @@ $capitalize.init({
 
 module.exports = $capitalize" >$1".js"
 
+
+echo "const db = require('../database/db')
+const sequelize = db.sequelize
+
+class Tokenblacklist extends db.Model {}
+
+Tokenblacklist.init({
+    identifier: {
+        type: db.DataTypes.UUID,
+        primaryKey: true
+    },
+    token: {
+        type: db.DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+    },  
+   
+}, {
+    sequelize,
+    modelName: 'tokenblacklist'
+})
+
+module.exports = Tokenblacklist" > "tokenblacklist.js"
+
 else
 echo "
 const db = require('../database/db')
@@ -129,6 +153,7 @@ const ServiceClass = require(config.services+'/account-service')
 const accountService = new ServiceClass(model);
 const path = require('path')
 const utils = require('../utils/functions')
+const tokenblacklist = require(config.models + '/tokenblacklist')
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
   
@@ -154,19 +179,14 @@ class $controllerClass extends Controller {
             req.body.phone_verified_digits = Math.floor(Math.random() * 999999 + 100000)
             req.body.phone_expiredtime = Math.floor(Date.now() / 1000) + 600
 
+            req.body.email_verified_digits = Math.floor(Math.random() * 999999 + 100000)
+            req.body.email_expiredtime = Math.floor(Date.now() / 1000) + 600
+
             let response = await this.service.insert(req.body)
             if (response.error) return res.status(response.statusCode).send(response);
 
             const item = response.item
 
-
-            twilio.messages.create({
-                body: 'Votre code de vérification est: ' + item.phone_verified_digits,
-                from: '+19713963567',
-                to: '+33763888725'//item.indicative+""+item.phone
-            }).then(message => console.log()).catch(
-                err => console.log(err)
-            )
 
             return res.status(201).send({ msg: 'item created successfully' })
 
@@ -216,8 +236,6 @@ class $controllerClass extends Controller {
                 token
             })
 
-            let account = res.locals.account
-            await account.addTokenblacklist(tokenBlackListCreated)
             return res.status(200).send({ msg: 'account logout successfully' })
 
         } catch (e) {
@@ -242,10 +260,6 @@ class $controllerClass extends Controller {
             if (req.body.verified_digits === account.phone_verified_digits) {
                 account.phone_verified = 1
 
-                //if it's a client account that enable the account
-                if (account.account_type === "CL") {
-                    account.status = 'AC'
-                }
                 await account.save()
                 return res.status(202).send({ msg: 'phone verified succesfully' })
             }
@@ -283,7 +297,7 @@ class $controllerClass extends Controller {
     }
 
     // to generate a new email verified number
-    async generateEmailDigits(res) {
+    async generateEmailDigits(req, res) {
 
         try {
             let account = res.locals.account
@@ -321,14 +335,6 @@ class $controllerClass extends Controller {
             account.phone_verified_digits = utils.generateDigits()
             account.phone_expiredtime = utils.generateExpiredTime()
             await account.save()
-            twilio.messages
-                .create({
-                    body: 'Le code de vérification est: ' + account.phone_verified_digits,
-                    from: '+19713963567',
-                    to: '+33763888725'
-                })
-                .then(() => console.log())
-                .done()
             return res.status(202).send({ msg: 'phone token generate successfully' })
 
         } catch (e) {
@@ -348,7 +354,7 @@ class $controllerClass extends Controller {
             account.email_expiredtime = utils.generateExpiredTime()
             account.email_verified = 0
             // update account status
-            account.status = 'IN'
+            account.status = 0
 
             await account.save()
 
@@ -373,17 +379,9 @@ class $controllerClass extends Controller {
             account.phone_expiredtime = utils.generateExpiredTime()
             account.phone_verified = 0
             // update account status
-            account.status = 'IN'
+            account.status = 0
             await account.save()
 
-            twilio.messages
-                .create({
-                    body: 'Le code de vérification est: ' + account.phone_verified_digits,
-                    from: '+19713963567',
-                    to: '+33763888725'
-                })
-                .then(() => console.log())
-                .done()
 
             return res.sendStatus(202)
 
@@ -497,6 +495,7 @@ fi
 if [ $1 == "account" ] && [ $2 == "--default" ]; then
 echo "const config = require('../../config')
 const AccountController = require(config['controllers']+'/account-controller')
+const tokenblacklist = require(config['models']+'/tokenblacklist')
 const expressRouter = config.express.Router()
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json()
@@ -514,7 +513,7 @@ expressRouter.post('/login',jsonParser, AccountController.login)
 expressRouter.post(
     '/logout',
     jsonParser, 
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     AccountController.logout
 )
@@ -523,7 +522,7 @@ expressRouter.post(
 expressRouter.put(
     '/update/verify/phone',
     jsonParser,
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     accountMiddlewares.hasPhoneVerified(),
     AccountController.verifyPhone
@@ -532,7 +531,7 @@ expressRouter.put(
 expressRouter.put(
     '/update/verify/email', 
     jsonParser,
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     accountMiddlewares.hasEmailVerified(),
     AccountController.verifyEmail
@@ -540,7 +539,7 @@ expressRouter.put(
 
 expressRouter.put(
     '/update/generatetoken/email', 
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     accountMiddlewares.hasEmailVerified(),
     AccountController.generateEmailDigits
@@ -548,7 +547,7 @@ expressRouter.put(
 
 expressRouter.put(
     '/update/generatetoken/phone', 
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     accountMiddlewares.hasPhoneVerified(),
     AccountController.generatePhoneDigits
@@ -558,7 +557,7 @@ expressRouter.put(
 expressRouter.put(
     '/update/phone', 
     jsonParser,
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     AccountController.updatePhone
 )
@@ -566,7 +565,7 @@ expressRouter.put(
 expressRouter.put(
     '/update/email', 
     jsonParser,
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     AccountController.updateEmail
 )
@@ -574,7 +573,7 @@ expressRouter.put(
 expressRouter.put(
     '/update/password',
     jsonParser, 
-    globalMiddlewares.verifyToken(config.jwt),
+    globalMiddlewares.verifyToken(config.jwt, tokenblacklist),
     accountMiddlewares.getAccount(account),
     AccountController.updatePassword
 )
@@ -603,3 +602,7 @@ fi
 cd ../..
 node router.js $1
 node migration.js $1
+
+if [ $1 == "account" ] && [ $2 == "--default" ]; then
+node migration.js tokenblacklist
+fi
