@@ -75,7 +75,7 @@ touch middlewares.js
 
 echo "const utils = require('../utils/functions')
 
-exports.verifyToken = (jwt /* token_black_list */) => {
+exports.verifyToken = (jwt /* ,token_black_list */) => {
   return async (req, res, next) => {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
