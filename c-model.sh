@@ -586,7 +586,7 @@ const $controllerClass = require(config['controllers']+'/$1-controller')
 const expressRouter = config.express.Router()
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json()
-
+//const globalMiddlewares = require('../middlewares')
 
 expressRouter.post('/create', jsonParser, $controllerClass.insert)
 expressRouter.get('/', $controllerClass.getAll)

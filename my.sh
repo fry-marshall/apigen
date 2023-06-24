@@ -67,6 +67,11 @@ const routes = (app) => {
     app.use(fileUpload())
 }
 
+/*
+  To store socket in the router
+  ex: app.use('/route',  globalMiddlewares.socketIo(io), router)
+*/
+
 module.exports = routes" > index.js
 
 #middleware
@@ -278,14 +283,31 @@ touch app.js
 echo "const express = require('express')
 const app = express()
 const dotenv = require('dotenv')
+const cors = require('cors')
 const routes = require('./routes/index')
 dotenv.config()
 
+const server = require('http').Server(app)
+const io = require('socket.io')(server, {
+    cors:true,
+    path: '/v1/socket.io'
+   }
+)
 
-routes(app)
+app.use(cors())
+io.on('connection', (socket) => {
+    console.log(`connecté au client: ${socket.id}`)
+})
+
+routes(app, io)
+
+/*
+  To add asset routes
+  app.use('/assets/asset_route', express.static('assets/asset_folder'))
+*/
 
 
-app.listen(process.env.PORT, () => {
+server.listen(process.env.PORT, () => {
     console.log('Server started')
 })" > app.js
 
@@ -501,7 +523,7 @@ echo "var fs = require('fs');
 const myArgs = process.argv.slice(2);
 const requireName = 'require(\"../models/'+myArgs+'\")'
 const importName = 'const '+myArgs+' = '+ requireName
-const sync = 'await '+myArgs+'.sync()'
+const sync = 'await '+myArgs+'.sync({alter: true})'
 var data = fs.readFileSync('utils/database/migrations.js').toString().split(\"\n\");
 let line
 let alreadyImport = false
@@ -552,6 +574,7 @@ echo "{
   \"author\": \"\",
   \"license\": \"ISC\",
   \"dependencies\": {
+    \"cors\": \"^2.8.5\",
     \"body-parser\": \"^1.20.0\",
     \"dotenv\": \"^16.0.0\",
     \"express\": \"^4.18.2\",
@@ -563,6 +586,7 @@ echo "{
     \"pbkdf2\": \"^3.1.2\",
     \"sequelize\": \"^6.19.0\",
     \"twilio\": \"^3.77.0\",
+    \"socket.io\": \"^4.5.1\",
     \"uuid\": \"^8.3.2\"
   }
 }
