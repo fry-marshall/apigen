@@ -93,6 +93,64 @@ echo "middlewares initialization"
 touch middlewares.ts
 
 
+echo "
+import { Request, Response, NextFunction } from \"express\"
+import jwt from \"jsonwebtoken\"
+import TokenBlackList from \"../models/tokenblacklist\"
+import User from \"../models/user\"
+
+
+const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+    console.log(token)
+
+
+    jwt.verify(token ?? '', process.env.ACCESS_TOKEN_SECRET!, async (err, user: any) => {
+
+
+        let tokenExisting = await TokenBlackList.findOne({
+            where: {
+                token: token
+            }
+        })
+
+        if (err || tokenExisting) {
+            const validationErrors = { error: { name: 'invalid_access_token', status: 401, message: 'Invalid access token' } }
+            return res.status(401).send({ is_error: true, value: validationErrors })
+        } else {
+            res.locals.id = user.id
+            res.locals.token = token
+            next()
+        }
+
+    })
+}
+
+
+const verifyRights = (rights: string) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        let user = await User.findByPk(res.locals.id)
+
+        if (!user) {
+            const validationErrors = { error: { name: 'not_found', status: 404, message: 'Item not found' } }
+            return res.status(404).send({ is_error: true, value: validationErrors })
+        }
+
+        if (user.account_type !== rights) {
+            const validationErrors = { error: { name: 'access_denied', status: 404, message: 'Access denied' } }
+            return res.status(403).send({ is_error: true, value: validationErrors })
+        }
+
+        res.locals.user = user
+        next()
+    }
+}
+
+
+export { verifyToken, verifyRights }" > middlewares.ts
+
+
 
 cd ..
 #models
@@ -143,7 +201,7 @@ cd ../..
 echo "services initialization"
 mkdir -p -- "services"
 cd services
-touch services.ts
+touch service.ts
 
 echo "import { ModelStatic, ValidationError } from \"sequelize\";
 import { codeErrors } from \"../../config/helpers\";
@@ -376,5 +434,5 @@ echo "{
 " > package.json
 
 npm install
-npm i @types/multer @types/node @types/uuid dotenv express multer sequelize typescript uuid
+npm i @types/multer @types/node @types/uuid @types/bcrypt @types/jsonwebtoken dotenv express multer sequelize typescript uuid bcrypt 
 npm i -D @types/express

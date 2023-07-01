@@ -18,6 +18,7 @@ interface UserAttributes{
     email_expiredtime?: string;
     email_verified?: boolean;
     password?: string;
+    account_type?: string;
     status?: boolean;
 }
 
@@ -29,7 +30,7 @@ const User = sequelize.define<UserInstance>('user', {
         primaryKey: true
     },
     phone: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         unique: true,
         validate: {
@@ -37,45 +38,51 @@ const User = sequelize.define<UserInstance>('user', {
         }
     },
     phone_verified_digits: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
-        notEmpty: true
+        validate: {
+            notEmpty: true,
+        }
     },
     phone_expiredtime: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false
     },
     phone_verified: {
-        type: db.DataTypes.BOOLEAN,
+        type: DataTypes.BOOLEAN,
         defaultValue: false
     },
     email: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
         unique: true,
         validate: {
             isEmail: true,
         }
     },
     email_verified_digits: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
     },
     email_expiredtime: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
     },
     email_verified: {
-        type: db.DataTypes.BOOLEAN,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
     },
     password: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         validate: {
             notEmpty: true
         }
     },
+    account_type: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
     status: {
-        type: db.DataTypes.BOOLEAN,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
     },
@@ -102,7 +109,7 @@ const TokenBlackList = sequelize.define<TokenBlackListInstance>('tokenblacklist'
         primaryKey: true
     },
     token: {
-        type: db.DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         unique: true,
     }, 
@@ -155,25 +162,25 @@ cd ..
 
 #controllers
 cd controllers
-touch "user-controller.js"
+touch "user-controller.ts"
 
 echo "
 import Service from \"../services/service\";
-import Express from "express";
-import { defaultApiErrorValue } from "../models/interfaces/errors";
+import Express from \"express\";
+import { defaultApiErrorValue } from \"../models/interfaces/errors\";
 import UserService from \"../services/user-service\";
 import Controller from \"./controller\";
 import User from \"../models/user\";
-import TokenBlackList from "../models/tokenblacklist";
 import TokenBlackList from \"../models/tokenblacklist\";
 import jwt from \"jsonwebtoken\"
 import bcrypt from \"bcrypt\";
 import { v4 as uuidv4 } from \"uuid\";
+import { ResponseRequest } from \"../models/interfaces/responses\";
 
   
 class UserController extends Controller {
   
-    constructor(service) {
+    constructor(service: Service) {
         super(service);
     }  
 
@@ -182,10 +189,8 @@ class UserController extends Controller {
     async insert(req: Express.Request, res: Express.Response) {
 
         try {
-            req.body.identifier = config.uuid.v4()
-            const passwordError = utils.validPassword(req.body.password)
             if (req.body.password.length < 8) {
-                const validationErrors = { error: { name: 'incorrect_length', status: 400, fields: [ {status: 8, name: 'password} ] }}
+                const validationErrors = { error: { name: 'incorrect_length', status: 400, fields: [ {status: 8, name: 'password'} ] }}
                 return res.status(400).send({is_error: true, value: validationErrors})
             }
 
@@ -193,7 +198,7 @@ class UserController extends Controller {
                 id: uuidv4(),
                 email: req.body?.email,
                 email_verified_digits: Math.floor(Math.random() * 999999 + 100000),
-                email_expiredtime: Math.floor(Date.now() / 1000) + 600
+                email_expiredtime: Math.floor(Date.now() / 1000) + 600,
                 phone: req.body?.phone,
                 phone_verified_digits: Math.floor(Math.random() * 999999 + 100000),
                 phone_expiredtime: Math.floor(Date.now() / 1000) + 600
@@ -222,7 +227,7 @@ class UserController extends Controller {
 
             let currentUser = await User.findOne({
                 where: {
-                    login: req.body.login,
+                    email: req.body.login,
                 }
             })
 
@@ -448,7 +453,6 @@ class UserController extends Controller {
             if (req.body.password.trim().length < 8) {
                 const validationErrors = { error: { name: 'verified', status: 400, fields: [{name: 'password', status: 8}]  }}
                 return res.status(400).send(validationErrors)
-                return res.status(400).send({ errors: [utils.inputErrors('password').incorrect_length] })
             }
 
             const passwordIsGood = bcrypt.compareSync(req.body.current_password, user.password!);
@@ -459,7 +463,7 @@ class UserController extends Controller {
             }
 
             user.password = bcrypt.hashSync(req.body.password, 10)
-            await account.save()
+            await user.save()
             const validReponse = {is_error: false, value: {status: 200, data: 'Password updated successfully'} }
             return res.status(202).send(validReponse)
 
@@ -499,7 +503,7 @@ class UserController extends Controller {
     }
 } 
 
-export default new UserController(new UserService(User));" > "user-controller.js"
+export default new UserController(new UserService(User));" > "user-controller.ts"
 
 
 touch tokenblacklist-controller.ts
@@ -533,8 +537,8 @@ touch middlewares.ts
 echo "
 import Express from \"express\"
 import UserController from \"../../controllers/user-controller\"
-import userMiddlewares from \"./middlewares\"
-import globalMiddlewares from \"../middlewares\"
+import * as userMiddlewares from \"./middlewares\"
+import * as globalMiddlewares from \"../middlewares\"
 
 const router = Express.Router()
 
@@ -542,70 +546,71 @@ const router = Express.Router()
 router.post('/create', Express.json(), UserController.insert)
 router.delete('/delete',Express.json(), UserController.delete)
 router.post('/login',Express.json(), UserController.logIn)
+router.post('/refreshtoken',Express.json(), UserController.refreshToken)
 
 router.post(
     '/logout',
     Express.json(), 
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
     UserController.logOut
 )
 
 router.put(
     '/update/verify/phone',
     Express.json(),
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
-    userMiddlewares.hasPhoneVerified(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
+    userMiddlewares.hasPhoneVerified,
     UserController.verifyPhone
 )
 
 router.put(
     '/update/verify/email', 
     Express.json(),
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
-    userMiddlewares.hasEmailVerified(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
+    userMiddlewares.hasEmailVerified,
     UserController.verifyEmail
 )
 
 router.put(
     '/update/generatetoken/email', 
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
-    userMiddlewares.hasEmailVerified(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,    
+    userMiddlewares.hasEmailVerified,
     UserController.generateEmailDigits
 )
 
 router.put(
     '/update/generatetoken/phone', 
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
-    userMiddlewares.hasPhoneVerified(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
+    userMiddlewares.hasPhoneVerified,
     UserController.generatePhoneDigits
 )
 
 router.put(
     '/update/phone', 
     Express.json(),
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
     UserController.updatePhone
 )
 
 router.put(
     '/update/email', 
     Express.json(),
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
     UserController.updateEmail
 )
 
 router.put(
     '/update/password',
     Express.json(), 
-    globalMiddlewares.verifyToken(),
-    userMiddlewares.getUser(),
+    globalMiddlewares.verifyToken,
+    userMiddlewares.getUser,
     UserController.updatePassword
 )
 
@@ -616,48 +621,44 @@ echo "
 import {Request, Response, NextFunction} from \"express\";
 import User from \"../../models/user\"; 
 
-exports.getUser = (user: User) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
-        let currentUser = await user.findByPk(res.locals.id)
-        if(!currentUser){
-            const validationErrors = { error: { name: 'not_found', status: 404, message: 'Item not found' }}
-            return res.status(404).send({is_error: true, value: validationErrors})
-        }
-        res.locals.user = currentUser
-        next()
-    }
+const getUser = async (req: Request, res: Response, next: NextFunction) => {
+  let currentUser = await User.findByPk(res.locals.id)
+  if (!currentUser) {
+    const validationErrors = { error: { name: 'not_found', status: 404, message: 'Item not found' } }
+    return res.status(404).send({ is_error: true, value: validationErrors })
+  }
+  res.locals.user = currentUser
+  next()
 }
 
-exports.hasPhoneVerified = () => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-      let currentUser = res.locals.user
-      
-      if(currentUser.phone_verified){
-        const validationErrors = { error: { name: 'access_denied', status: 403, message: 'Phone not verified' }}
-        return res.status(403).send({is_error: true, value: validationErrors})
-      }
-      next()
+const hasPhoneVerified = (req: Request, res: Response, next: NextFunction) => {
+  let currentUser = res.locals.user
+
+  if (currentUser.phone_verified) {
+    const validationErrors = { error: { name: 'access_denied', status: 403, message: 'Phone not verified' } }
+    return res.status(403).send({ is_error: true, value: validationErrors })
   }
+  next()
 }
 
-exports.hasEmailVerified = () => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-      let currentUser = res.locals.user
-      
-      if(currentUser.email_verified){
-        const validationErrors = { error: { name: 'access_denied', status: 403, message: 'Email not verified' }}
-        return res.status(403).send({is_error: true, value: validationErrors})
-      }
-      next()
+const hasEmailVerified = (req: Request, res: Response, next: NextFunction) => {
+  let currentUser = res.locals.user
+
+  if (currentUser.email_verified) {
+    const validationErrors = { error: { name: 'access_denied', status: 403, message: 'Email not verified' } }
+    return res.status(403).send({ is_error: true, value: validationErrors })
   }
-}" > "middlewares.ts"
+  next()
+}
+
+export { hasEmailVerified, hasPhoneVerified, getUser }" > "middlewares.ts"
 
 
 cd ..
 #add router
 routerFile="router.ts"
 importModel="import UserRouter from \"./user/user\""
-importRouter="app.use(\"/user\", UserRouterRouter)"
+importRouter="app.use(\"/user\", UserRouter)"
 import_model_line=1
 import_router_line=$(grep -n "app.use(express." "$routerFile" | cut -d ":" -f 1)
 import_router_line=$import_router_line+2
@@ -678,7 +679,7 @@ importModelUser="import User from \"../app/models/user\"";
 importModelToken="import TokenBlackList from \"../app/models/tokenblacklist\"";
 importConfigUser="await User.sync({ alter: true });"
 importConfigToken="await TokenBlackList.sync({ alter: true });"
-import_migration_line=$(grep -n "})();" "$configFile" | cut -d ":" -f 1)
+import_migration_line=$(grep -n "})();" "$configFile" | cut -d ":" -f 1)+1
 import_migration_token_line=$import_migration_line+2
 
 if [ -n "$import_migration_line" ]; then
@@ -688,5 +689,5 @@ fi
 
 if [ -n "$import_migration_token_line" ]; then
     printf "%s\n" "${import_model_token_line}i" "$importModelToken" . w | ed -s "$configFile"
-    printf "%s\n" "${import_model_token_line}i" "$(printf '\t')$importConfigToken" . w | ed -s "$configFile"
+    printf "%s\n" "${import_migration_token_line}i" "$(printf '\t')$importConfigToken" . w | ed -s "$configFile"
 fi
