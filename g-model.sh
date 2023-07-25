@@ -15,24 +15,22 @@ if [[ $capitalize == *"$caractere"* ]]; then
 fi
 
 echo "import { DataTypes, Model } from \"sequelize\";
-    import sequelize from \"../../config/database\";
+import sequelize from \"../../config/database\";
 
-    interface ${capitalize}Attributes{
-        id?: string;
+interface ${capitalize}Attributes{
+    id?: string;
+}
+
+interface ${capitalize}Instance extends Model<${capitalize}Attributes>, ${capitalize}Attributes{}
+
+const $capitalize = sequelize.define<${capitalize}Instance>('$1', {
+    id: {
+        type: DataTypes.STRING,
+        primaryKey: true
     }
+})
 
-    interface ${capitalize}Instance extends Model<${capitalize}Attributes>, ${capitalize}Attributes{}
-
-    const $capitalize = sequelize.define<${capitalize}Instance>('$1', {
-        id: {
-            type: DataTypes.STRING,
-            primaryKey: true
-        }
-    })
-
-    export default $capitalize;
-
-    " >$1".ts"
+export default $capitalize;" >$1".ts"
 
 cd ..
 
@@ -40,19 +38,18 @@ cd ..
 cd services
 touch $1-service.ts
 serviceClass=$capitalize"Service"
-echo "
-    import { ModelStatic } from \"sequelize\";
-    import Service from \"./service\";
+echo "import { ModelStatic } from \"sequelize\";
+import Service from \"./service\";
 
         
-    class $serviceClass extends Service {
+class $serviceClass extends Service {
         
-        constructor(model: ModelStatic<any>) {
-            super(model)
-        }
+    constructor(model: ModelStatic<any>) {
+        super(model)
     }
+}
 
-    export default $serviceClass" >$1"-service.ts"
+export default $serviceClass" >$1"-service.ts"
 
 cd ..
 
@@ -60,20 +57,20 @@ cd ..
 cd controllers
 touch $1-controller.ts
 controllerClass=$capitalize"Controller"
-echo "
-    import Service from \"../services/service\";
-    import ${capitalize}Service from \"../services/${1}-service\";
-    import Controller from \"./controller\";
-    import $capitalize from \"../models/$1\";
+echo "import Service from \"../services/service\";
+import ${capitalize}Service from \"../services/${1}-service\";
+import Controller from \"./controller\";
+import $capitalize from \"../models/$1\";
 
         
-    class $controllerClass extends Controller {
+class $controllerClass extends Controller {
         
-        constructor(service: Service) {
-            super(service);
-        }
+    constructor(service: Service) {
+        super(service);
     }
-    export default new $controllerClass(new ${capitalize}Service($capitalize));" >$1"-controller.ts"
+}
+
+export default new $controllerClass(new ${capitalize}Service($capitalize));" >$1"-controller.ts"
 
 cd ..
 
@@ -85,16 +82,16 @@ touch $1".ts"
 touch middlewares.ts
 
 echo "import Express from \"express\"
-    import ${capitalize}Controller from \"../../controllers/$1-controller\"
+import ${capitalize}Controller from \"../../controllers/$1-controller\"
 
-    const router = Express.Router()
+const router = Express.Router()
 
-    router.post('/create', Express.json(), $controllerClass.insert)
-    router.get('/', $controllerClass.getAll)
-    router.put('/update',Express.json(),$controllerClass.update)
-    router.delete('/delete',Express.json(), $controllerClass.delete)
+router.post('/create', Express.json(), $controllerClass.insert)
+router.get('/', $controllerClass.getAll)
+router.put('/update',Express.json(),$controllerClass.update)
+router.delete('/delete',Express.json(), $controllerClass.delete)
 
-    export default router" >$1".ts"
+export default router" >$1".ts"
 
 cd ..
 
