@@ -7,7 +7,7 @@ touch "user.ts"
 echo "import { DataTypes, Model } from \"sequelize\";
 import sequelize from \"../../config/database\";
 
-interface UserAttributes{
+export interface UserAttributes{
     id?: string;
     phone?: string;
     phone_verified_digits?: string;
@@ -22,7 +22,7 @@ interface UserAttributes{
     status?: boolean;
 }
 
-interface UserInstance extends Model<UserAttributes>, UserAttributes{}
+export interface UserInstance extends Model<UserAttributes>, UserAttributes{}
 
 const User = sequelize.define<UserInstance>('user', {
     id: {
@@ -170,13 +170,14 @@ import Express from \"express\";
 import { defaultApiErrorValue } from \"../models/interfaces/errors\";
 import UserService from \"../services/user-service\";
 import Controller from \"./controller\";
-import User from \"../models/user\";
+import User, { UserAttributes } from "../models/user";
 import TokenBlackList from \"../models/tokenblacklist\";
 import jwt from \"jsonwebtoken\"
 import bcrypt from \"bcrypt\";
 import { v4 as uuidv4 } from \"uuid\";
 import { ResponseRequest } from \"../models/interfaces/responses\";
-
+import { mailTransporter, smsTransporter } from \"../../config/helpers\";
+import \"dotenv/config\";
   
 class UserController extends Controller {
   
@@ -194,14 +195,16 @@ class UserController extends Controller {
                 return res.status(400).send({is_error: true, value: validationErrors})
             }
 
-            const body = {
+            const body: UserAttributes = {
                 id: uuidv4(),
                 email: req.body?.email,
                 email_verified_digits: Math.floor(Math.random() * 999999 + 100000),
                 email_expiredtime: Math.floor(Date.now() / 1000) + 600,
                 phone: req.body?.phone,
                 phone_verified_digits: Math.floor(Math.random() * 999999 + 100000),
-                phone_expiredtime: Math.floor(Date.now() / 1000) + 600
+                phone_expiredtime: Math.floor(Date.now() / 1000) + 600,
+                password: req.body.password,
+                account_type: req.body.account_type,
             }
 
             let response = await this.service.insert(body)
@@ -209,6 +212,23 @@ class UserController extends Controller {
             if ( response?.is_error ){
                 return res.status(400).send(response);
             }
+
+            //TODO
+            await mailTransporter.sendMail({
+                from: process.env.MAIL_USERNAME,
+                to: body.email,
+                subject: "Vérification du compte",
+                html: `<p></p>`,
+            });
+
+            //TODO
+            smsTransporter.messages.create({
+                body: '',
+                from: process.env.TWILIO_NUMBER,
+                to: body.phone
+            }).then(message => console.log()).catch(
+                err => console.log(err)
+            )
 
             const validReponse = {is_error: false, value: {status: 201, data: 'item created successfully'} }
             return res.status(201).send(validReponse)
@@ -346,7 +366,13 @@ class UserController extends Controller {
             user.email_expiredtime = Math.floor(Date.now() / 1000) + 600
             await user.save()
             
-            //email part
+            //TODO
+            await mailTransporter.sendMail({
+                from: process.env.MAIL_USERNAME,
+                to: user.email,
+                subject: "Vérification du compte",
+                html: `<p></p>`,
+            });
 
             const validReponse = {is_error: false, value: {status: 200, data: 'Email verification code generated successfully'} }
             return res.status(202).send(validReponse)
@@ -372,7 +398,14 @@ class UserController extends Controller {
             user.phone_expiredtime = Math.floor(Date.now() / 1000) + 600
             await user.save()
             
-            //phone part
+            //TODO
+            smsTransporter.messages.create({
+                body: '',
+                from: process.env.TWILIO_NUMBER,
+                to: user.phone
+            }).then(message => console.log()).catch(
+                err => console.log(err)
+            )
 
             const validReponse = {is_error: false, value: {status: 200, data: 'Phone verification code generated successfully'} }
             return res.status(202).send(validReponse)

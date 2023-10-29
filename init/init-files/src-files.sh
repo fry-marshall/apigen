@@ -217,8 +217,6 @@ export default class Service {
 
 cd ../..
 
-echo $PWD
-
 #config files
 cd config
 touch migrations.ts
@@ -287,8 +285,7 @@ export default Helpers;" > helpers.ts
 cd templates
 touch verify-email.ts
 echo "export function verifyEmailTemplate( mail: string, url: string) {
-    //TODO test logo
-    return `<!DOCTYPE html>
+    return \`<!DOCTYPE html>
     <html lang=\"en\">
     <head></head>
     <body>
@@ -307,7 +304,7 @@ echo "export function verifyEmailTemplate( mail: string, url: string) {
                                     <td>
                                         <div style=\"border-style:solid;border-width:thin;border-color:#dadce0;border-radius:8px;padding:40px 20px\"
                                             align=\"center\">
-                                            <img src=\"${__dirname + '/dist/assets/logo.png'}\" width=\"74\" height=\"24\" aria-hidden=\"true\"
+                                            <img src=\"/dist/assets/logo.png'\" width=\"74\" height=\"24\" aria-hidden=\"true\"
                                                 style=\"margin-bottom:16px\" alt=\"Logo\">
                                             <div
                                                 style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;border-bottom:thin solid #dadce0;color:rgba(0,0,0,0.87);line-height:32px;padding-bottom:24px;text-align:center;word-break:break-word\">
@@ -369,13 +366,12 @@ echo "export function verifyEmailTemplate( mail: string, url: string) {
             </tbody>
         </table>
     </body>
-    </html>`
+    </html>\`
 }" > verify-email.ts
 
 touch reset-password.ts
 echo "export function resetPasswordTemplate( mail: string, url: string) {
-    //TODO test logo
-    return `<!DOCTYPE html>
+    return \`<!DOCTYPE html>
     <html lang=\"en\">
     <head></head>
     <body>
@@ -455,7 +451,7 @@ echo "export function resetPasswordTemplate( mail: string, url: string) {
             </tbody>
         </table>
     </body>
-    </html>`
+    </html>\`
 }" > reset-password.ts
 
 cd ../../..
