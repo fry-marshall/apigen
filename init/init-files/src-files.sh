@@ -284,7 +284,7 @@ export default Helpers;" > helpers.ts
 
 cd templates
 touch verify-email.ts
-echo "export function verifyEmailTemplate( mail: string, url: string) {
+echo "export function verifyEmailTemplate(mail: string, url: string) {
     return \`<!DOCTYPE html>
     <html lang=\"en\">
     <head></head>
@@ -304,7 +304,7 @@ echo "export function verifyEmailTemplate( mail: string, url: string) {
                                     <td>
                                         <div style=\"border-style:solid;border-width:thin;border-color:#dadce0;border-radius:8px;padding:40px 20px\"
                                             align=\"center\">
-                                            <img src=\"/dist/assets/logo.png'\" width=\"74\" height=\"24\" aria-hidden=\"true\"
+                                            <img src=\"/dist/assets/logo.png\" width=\"74\" height=\"24\" aria-hidden=\"true\"
                                                 style=\"margin-bottom:16px\" alt=\"Logo\">
                                             <div
                                                 style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;border-bottom:thin solid #dadce0;color:rgba(0,0,0,0.87);line-height:32px;padding-bottom:24px;text-align:center;word-break:break-word\">
@@ -327,10 +327,10 @@ echo "export function verifyEmailTemplate( mail: string, url: string) {
                                             </div>
                                             <div
                                                 style=\"font-family:Roboto-Regular,Helvetica,Arial,sans-serif;font-size:14px;color:rgba(0,0,0,0.87);line-height:20px;padding-top:20px;text-align:center\">
-                                                <b>Bonjour</b>, votre compte a été crée avec succès ! 😍 <br /><br /><br />
+                                                <b>Bonjour</b>, votre compte a été créé avec succès ! 😍 <br /><br /><br />
                                                 Pour vérifier votre adresse mail et profiter pleinement de nos services,
                                                 veuillez cliquer sur le lien suivant ( valable 10 minutes ): <br /><br />
-                                                <a target=\"_blank\" href=\"${url}\"
+                                                <a target=\"_blank\" href=\"\${url}\"
                                                     style=\"display: inline-block; padding:10px 24px; background-color: #00B51D; color: #ffffff; text-align: center; text-decoration: none; border-radius: 5px;\">Activer
                                                     mon compte</a>
                                             </div>
@@ -340,8 +340,8 @@ echo "export function verifyEmailTemplate( mail: string, url: string) {
                                                 dans la barre
                                                 d'adresse de votre navigateur: <br />
                                                 <a target=\"_blank\"
-                                                    href=\"${url}\"
-                                                    style=\"display: inline-block; padding:10px 24px; text-align: center; \">${url}</a>
+                                                    href=\"\${url}\"
+                                                    style=\"display: inline-block; padding:10px 24px; text-align: center; \">\${url}</a>
                                             </div>
                                         </div>
                                         <div style=\"text-align:left\">
@@ -366,7 +366,7 @@ echo "export function verifyEmailTemplate( mail: string, url: string) {
             </tbody>
         </table>
     </body>
-    </html>\`
+</html>\`
 }" > verify-email.ts
 
 touch reset-password.ts
@@ -405,7 +405,7 @@ echo "export function resetPasswordTemplate( mail: string, url: string) {
                                                             </td>
                                                             <td>
                                                                 <a
-                                                                    style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;color:rgba(0,0,0,0.87);font-size:14px;line-height:20px\">${mail}</a>
+                                                                    style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;color:rgba(0,0,0,0.87);font-size:14px;line-height:20px\">\`${mail}\`</a>
                                                             </td>
                                                         </tr>
                                                     </tbody>
