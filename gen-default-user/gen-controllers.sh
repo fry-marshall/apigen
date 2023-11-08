@@ -48,7 +48,7 @@ class UserController extends Controller {
             }
 
             // send the verification email
-            const url = 'http://localhost:3000/user/update/verify/email?token='+(response as any).data.email_verified_token
+            const url = \`\${process.env.HOST_NAME}/verifyemail?token=\${(response as any).data.email_verified_token}\`
             await Helpers.mailTransporter.sendMail({
                 from: process.env.MAIL_USERNAME,
                 to: body.email,
@@ -58,9 +58,9 @@ class UserController extends Controller {
 
             // send the verification phone number
             Helpers.smsTransporter.messages.create({
-                body: 'Votre code de vérification est ' + (response as any).data.phone_verified_token + ' ( valable pendant 10 minutes )',
+                body: 'Votre code de vérification est ' + (response as any).data.phone_verified_digits + ' ( valable pendant 10 minutes )',
                 from: process.env.TWILIO_NUMBER,
-                to: body.phone!
+                to: Helpers.getNumberFormatAccordingIndicative(body.indicative!, body.phone!)
             })
             .then(console.log)
             .catch(console.log)
@@ -212,7 +212,7 @@ class UserController extends Controller {
             user.email_expiredtime = Math.floor(Date.now() / 1000) + 600
             await user.save()
             
-            const url = 'http://localhost:3000/user/update/verify/email?token='+user.email_verified_token
+            const url = \`\${process.env.HOST_NAME}/verifyemail?token=\${user.email_verified_token}\`
             await Helpers.mailTransporter.sendMail({
                 from: process.env.MAIL_USERNAME,
                 to: user.email,
@@ -243,7 +243,7 @@ class UserController extends Controller {
             Helpers.smsTransporter.messages.create({
                 body: 'Votre code de vérification est ' + user.phone_verified_digits + ' ( valable pendant 10 minutes )',
                 from: process.env.TWILIO_NUMBER,
-                to: user.phone
+                to: Helpers.getNumberFormatAccordingIndicative(user.indicative!, user.phone!)
             })
             .then(console.log)
             .catch(console.log)
@@ -283,6 +283,7 @@ class UserController extends Controller {
                 body.phone_verified = false
                 body.phone_expiredtime = Helpers.timeAfterSecond(600).toString()
                 body.phone_verified_digits = Math.floor(Math.random() * 999999 + 100000).toString()
+                body.indicative = body.indicative ?? user.indicative
             }
 
             if(req.body.email){
@@ -298,23 +299,27 @@ class UserController extends Controller {
                 return res.status(400).send(response);
             }
 
-            // send the verification email
-            const url = 'http://localhost:3000/user/update/verify/email?token='+(response as any).data.email_verified_token
-            await Helpers.mailTransporter.sendMail({
-                from: process.env.MAIL_USERNAME,
-                to: body.email,
-                subject: 'Vérification de l\'adresse mail',
-                html: Helpers.verifyEmail(body.email!, url),
-            })
+            if (body.email) {
+                // send the verification email
+                const url = \`\${process.env.HOST_NAME}/verifyemail?token=\${(response as any).data.email_verified_token}\`
+                await Helpers.mailTransporter.sendMail({
+                    from: process.env.MAIL_USERNAME,
+                    to: body.email,
+                    subject: 'Vérification de l\'adresse mail',
+                    html: Helpers.verifyEmail(body.email!, url),
+                })
+            }
 
-            // send the verification phone number
-            Helpers.smsTransporter.messages.create({
-                body: 'Votre code de vérification est ' + (response as any).data.phone_verified_token + ' ( valable pendant 10 minutes )',
-                from: process.env.TWILIO_NUMBER,
-                to: body.phone!
-            })
-            .then(console.log)
-            .catch(console.log)
+            if (body.phone) {
+                // send the verification phone number
+                Helpers.smsTransporter.messages.create({
+                    body: 'Votre code de vérification est ' + (response as any).data.phone_verified_token + ' ( valable pendant 10 minutes )',
+                    from: process.env.TWILIO_NUMBER,
+                    to:  Helpers.getNumberFormatAccordingIndicative(body.indicative!, body.phone!)
+                })
+                .then(console.log)
+                .catch(console.log)
+            }
 
             return res.status(202).json(Helpers.queryResponse({id: user.id, msg: 'user account updated successfully'}))
 
@@ -343,7 +348,7 @@ class UserController extends Controller {
                 user.forgotpasswordused = false
                 await user.save()
                 
-                const url = 'http://localhost:3000/forgotpassword/change?token='+user.forgotpasswordtoken
+                const url = \`\${process.env.HOST_NAME}/resetpassword?token=\${user.forgotpasswordtoken}\`
 
                 await Helpers.mailTransporter.sendMail({
                     from: process.env.MAIL_USERNAME,
@@ -369,7 +374,6 @@ class UserController extends Controller {
 
             let user = await User.findOne({
                 where: {
-                    email: req.body.email,
                     forgotpasswordtoken: token as string,
                     forgotpasswordused: false
                 }

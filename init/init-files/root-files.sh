@@ -49,8 +49,8 @@ echo "{
   \"main\": \"app.js\",
   \"scripts\": {
     \"test\": \"jest --watchAll\",
-    \"start\": \"tsc -w & nodemon dist/src/app.js\",
-    \"migrate\": \"node dist/config/migrations.js\"
+    \"start\": \"npx tsc -w & nodemon dist/src/app.js\",
+    \"migrate\": \"node dist/src/config/migrations.js\"
   },
   \"author\": \"\",
   \"license\": \"ISC\",
@@ -64,7 +64,7 @@ touch Makefile
 echo "start: 
 	npm run start
 compile: 
-	tsc -w
+	npx tsc
 migrate: 
 	npm run migrate
 test: 
@@ -80,3 +80,10 @@ echo "module.exports = {
       \"@exmpl/(.*)\": \"./$1\"
     },
 };" > jest.config.ts
+
+
+#.gitignore
+touch .gitignore
+echo "node_modules
+dist/src
+dist/jest.config.js" > .gitignore

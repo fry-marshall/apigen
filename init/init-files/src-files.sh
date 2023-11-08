@@ -10,11 +10,13 @@ touch app.ts
 echo "import Express from \"express\"
 import router from \"./app/routes/router\"
 import http from \"http\"
+import cors from \"cors\"
 
 
 const app = Express()
 const server = new http.Server(app)
 
+app.use(cors())
 router(app)
 
 /*
@@ -278,6 +280,20 @@ class Helpers{
         return Math.floor(Date.now() / 1000) + second
     }
 
+    public static getNumberFormatAccordingIndicative(indicative: string, number: string){
+        let numberFormat = indicative
+        switch(indicative){
+            case '+33':
+                numberFormat += number.substring(1)
+                break;
+
+            case '+225':
+                numberFormat += number
+                break;
+        }
+        return numberFormat
+    }
+
 }
 
 export default Helpers;" > helpers.ts
@@ -319,7 +335,7 @@ echo "export function verifyEmailTemplate(mail: string, url: string) {
                                                             </td>
                                                             <td>
                                                                 <a
-                                                                    style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;color:rgba(0,0,0,0.87);font-size:14px;line-height:20px\">${mail}</a>
+                                                                    style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;color:rgba(0,0,0,0.87);font-size:14px;line-height:20px\">\${mail}</a>
                                                             </td>
                                                         </tr>
                                                     </tbody>
@@ -405,7 +421,7 @@ echo "export function resetPasswordTemplate( mail: string, url: string) {
                                                             </td>
                                                             <td>
                                                                 <a
-                                                                    style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;color:rgba(0,0,0,0.87);font-size:14px;line-height:20px\">\`${mail}\`</a>
+                                                                    style=\"font-family:'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;color:rgba(0,0,0,0.87);font-size:14px;line-height:20px\">\${mail}</a>
                                                             </td>
                                                         </tr>
                                                     </tbody>
@@ -415,7 +431,7 @@ echo "export function resetPasswordTemplate( mail: string, url: string) {
                                                 style=\"font-family:Roboto-Regular,Helvetica,Arial,sans-serif;font-size:14px;color:rgba(0,0,0,0.87);line-height:20px;padding-top:20px;text-align:center\">
                                                 <b>Bonjour</b>, <br /><br /><br />
                                                 Pour pouvez réinitialiser votre mot de passe en cliquant sur le lien suivant: <br /><br />
-                                                <a target=\"_blank\" href=\"${url}\" style=\"display: inline-block; padding:10px 24px; background-color: #00B51D; color: #ffffff; text-align: center; text-decoration: none; border-radius: 5px;\">
+                                                <a target=\"_blank\" href=\"\${url}\" style=\"display: inline-block; padding:10px 24px; background-color: #00B51D; color: #ffffff; text-align: center; text-decoration: none; border-radius: 5px;\">
                                                     Réinitialiser le mot de passe
                                                 </a>
                                             </div>
@@ -425,8 +441,8 @@ echo "export function resetPasswordTemplate( mail: string, url: string) {
                                                 dans la barre
                                                 d'adresse de votre navigateur: <br />
                                                 <a target=\"_blank\"
-                                                    href=\"${url}\"
-                                                    style=\"display: inline-block; padding:10px 24px; text-align: center; \">${url}</a>
+                                                    href=\"\${url}\"
+                                                    style=\"display: inline-block; padding:10px 24px; text-align: center; \">\${url}</a>
                                             </div>
                                         </div>
                                         <div style=\"text-align:left\">
@@ -458,5 +474,5 @@ cd ../../..
 
 #install default packages
 npm install
-npm i @types/bcrypt @types/jsonwebtoken @types/nodemailer bcrypt dotenv express twilio uuid
-npm i -D @types/express @types/jest @types/supertest @types/uuid jest nodemon supertest ts-jest ts-node typescript
+npm i @types/bcrypt @types/jsonwebtoken @types/nodemailer bcrypt dotenv express twilio uuid sequelize nodemailer mysql2 cors
+npm i -D @types/express @types/jest @types/supertest @types/uuid jest nodemon supertest ts-jest ts-node typescript @types/sequelize @types/cors
