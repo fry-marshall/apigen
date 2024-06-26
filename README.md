@@ -30,9 +30,9 @@ nano ~/.zshrc
 
 
 ```bash
-alias genmodel="bash /Users/kangacedricmarshallfry/Desktop/DEV/Apigen/gen-model/main.sh $1"
-alias apigen="bash /Users/kangacedricmarshallfry/Desktop/DEV/Apigen/init/main.sh $1"
-alias genmodeluser="bash /Users/kangacedricmarshallfry/Desktop/DEV/Apigen/gen-default-user/main.sh"
+alias genmodel="bash /path-to-apigen/gen-model/main.sh $1"
+alias apigen="bash /path-to-apigen/init/main.sh $1"
+alias genmodeluser="bash /path-to-apigen/gen-default-user/main.sh"
 ```
 
 #### Store the changes

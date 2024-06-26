@@ -8,6 +8,7 @@ echo "import Service from \"../services/service\";
 import ${capitalize}Service from \"../services/${1}-service\";
 import Controller from \"./controller\";
 import $capitalize from \"../models/$1\";
+//import { Request, Response } from \"express\";
 
         
 class $controllerClass extends Controller {
